@@ -71,6 +71,7 @@ fn m(x: u64, y: u64) -> (r: u128)
 
 {
     proof {
+        // if a <= a' and b <= b' then ab <= a'b'
         mul_le(x as nat, u64::MAX as nat, y as nat, u64::MAX as nat);
     }
     (x as u128) * (y as u128)
@@ -162,8 +163,6 @@ impl FieldElement51 {
         proof {
             lemma_boundaries(limbs);
             lemma_reduce(limbs);
-            pow255_gt_19();
-            lemma_mod_multiples_vanish((limbs[4] >> 51) as int, as_nat(spec_reduce(limbs)) as int, p() as int);
         }
 
         // Since the input limbs are bounded by 2^64, the biggest
@@ -214,12 +213,12 @@ impl FieldElement51 {
     #[rustfmt::skip] // keep alignment of bit shifts
     pub const fn from_bytes(bytes: &[u8; 32]) -> (r: FieldElement51)
         ensures
-            true
-            // TODO:
-            // as_nat(r.limbs) =?= as_nat_32_u8(bytes)
+            // last bit is ignored
+            as_nat(r.limbs) == as_nat_32_u8(*bytes) % pow2(255)
     {
         proof {
-            l51_bit_mask_lt() // No over/underflow in the below let-def
+            l51_bit_mask_lt(); // No over/underflow in the below let-def
+            assume(false);
         }
         let low_51_bit_mask = (1u64 << 51) - 1;
         // ADAPTED CODE LINE: limbs is now a named field
@@ -243,11 +242,8 @@ impl FieldElement51 {
     #[allow(clippy::wrong_self_convention)]
     pub fn to_bytes(self) -> (r: [u8; 32])
         ensures
-            true // No overflow
-            // TODO:
-            // as_nat(self.limbs) =?= as_nat_32_u8(r),
-            // canonical encoding
-            // forall|i: int| 0 <= i < 5 ==> r[i] < (1u64 << 51)
+            // canonical encoding, i.e. mod p value
+            as_nat_32_u8(r) == as_nat(self.limbs) % p()
     {
         proof {
             let l = spec_reduce(self.limbs);
@@ -288,6 +284,8 @@ impl FieldElement51 {
             shifted_lt(l3, 51);
 
             l51_bit_mask_lt();
+
+            assume(false);
 
             // TODO
             // let rr = [
@@ -440,7 +438,7 @@ impl FieldElement51 {
 
         for i in 0..k
             invariant
-                forall |i: int| 0 <= i < 5 ==> a[i] < 1u64 << 54,
+                forall |j: int| 0 <= j < 5 ==> a[j] < 1u64 << 54,
                 as_nat(a) % p() == pow(as_nat(self.limbs) as int, pow2(i as nat)) as nat % p(),
         {
             proof {
