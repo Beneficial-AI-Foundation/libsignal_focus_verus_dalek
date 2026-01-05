@@ -1,6 +1,5 @@
 # Build artifacts
 target/
-Cargo.lock
 
 # SCIP index files
 *.scip
