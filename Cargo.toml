@@ -27,6 +27,8 @@ members = [
     "curve25519-dalek-derive",
     "ed25519-dalek",
     "x25519-dalek",
+    # spqr crate via symlink for SCIP indexing
+    "spqr",
 ]
 default-members = [
     "rust/crypto",
@@ -89,7 +91,7 @@ signal-neon-futures = { path = "rust/bridge/node/futures" }
 
 boring-signal = { git = "https://github.com/signalapp/boring", tag = "signal-v4.18.0", package = "boring", default-features = false }
 curve25519-dalek-signal = { git = 'https://github.com/signalapp/curve25519-dalek', package = "curve25519-dalek", tag = 'signal-curve25519-4.1.3' }
-spqr = { git = "https://github.com/signalapp/SparsePostQuantumRatchet.git", tag = "v1.2.0" }
+spqr = { path = "spqr" }
 tokio-boring-signal = { git = "https://github.com/signalapp/boring", package = "tokio-boring", tag = "signal-v4.18.0" }
 
 aes = "0.8.3"
