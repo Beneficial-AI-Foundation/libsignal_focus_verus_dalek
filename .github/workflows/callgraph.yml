@@ -17,11 +17,12 @@ jobs:
     uses: Beneficial-AI-Foundation/scip-callgraph/.github/workflows/generate-callgraph.yml@main
     with:
       github_url: https://github.com/Beneficial-AI-Foundation/libsignal_focus_verus_dalek
+      package: curve25519-dalek
       use_rust_analyzer: false
       skip_verification: false
       skip_similar_lemmas: false
-      verus_version: "0.2026.01.14.88f7396"
-      rust_version: "1.92.0"
+      verus_version: "0.2025.11.23.41c5885"
+      rust_version: "1.91.0"
     permissions:
       contents: read
       pages: write
