@@ -1,0 +1,3 @@
+[submodule "deps/curve25519-dalek"]
+	path = deps/curve25519-dalek
+	url = https://github.com/Beneficial-AI-Foundation/curve25519-dalek
