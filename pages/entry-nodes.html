@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entry Nodes | libsignal Call Graph</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f1117;
+            --surface: #1a1d27;
+            --surface-hover: #22262f;
+            --border: #2a2e3a;
+            --text: #e1e4eb;
+            --text-muted: #8b90a0;
+            --accent: #6c8cff;
+            --accent-hover: #8aa4ff;
+            --link: #6c8cff;
+            --link-hover: #8aa4ff;
+            --graph-link: #50c878;
+            --graph-link-hover: #6fdb92;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0.75rem 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--text);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+            gap: 1.25rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: color 0.15s;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--accent);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        .hero {
+            padding: 2.5rem 0 1.5rem;
+        }
+
+        .hero h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .hero p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            max-width: 700px;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            max-width: 400px;
+            padding: 0.5rem 0.75rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.875rem;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .search-box:focus {
+            border-color: var(--accent);
+        }
+
+        .search-box::placeholder {
+            color: var(--text-muted);
+        }
+
+        .stat-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.35rem 0.75rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .stat-badge .count {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        .section {
+            margin-bottom: 0.5rem;
+        }
+
+        .section-heading {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text);
+            padding: 0.6rem 0;
+            cursor: pointer;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            user-select: none;
+        }
+
+        .section-heading::-webkit-details-marker {
+            display: none;
+        }
+
+        .section-heading::before {
+            content: "▶";
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            transition: transform 0.15s;
+            display: inline-block;
+            width: 1em;
+            flex-shrink: 0;
+        }
+
+        details[open] > .section-heading::before {
+            transform: rotate(90deg);
+        }
+
+        .section-count {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.1rem 0.5rem;
+        }
+
+        .table-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        th {
+            background: var(--surface);
+            color: var(--text-muted);
+            font-weight: 600;
+            text-align: left;
+            padding: 0.65rem 1rem;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.15s;
+        }
+
+        th:hover {
+            color: var(--text);
+        }
+
+        th .sort-indicator {
+            margin-left: 0.3rem;
+            opacity: 0.4;
+            font-size: 0.7rem;
+        }
+
+        th.sorted .sort-indicator {
+            opacity: 1;
+            color: var(--accent);
+        }
+
+        td {
+            padding: 0.55rem 1rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: var(--surface-hover);
+        }
+
+        .col-name {
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .col-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            max-width: 450px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .col-id:hover {
+            white-space: normal;
+            word-break: break-all;
+        }
+
+        a.source-link {
+            color: var(--link);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.825rem;
+            transition: color 0.15s;
+        }
+
+        a.source-link:hover {
+            color: var(--link-hover);
+            text-decoration: underline;
+        }
+
+        a.graph-link {
+            color: var(--graph-link);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.825rem;
+            transition: color 0.15s;
+        }
+
+        a.graph-link:hover {
+            color: var(--graph-link-hover);
+            text-decoration: underline;
+        }
+
+        .group-header td {
+            background: var(--bg);
+            font-weight: 600;
+            font-size: 0.8rem;
+            color: var(--accent);
+            padding: 0.6rem 1rem 0.35rem;
+            letter-spacing: 0.03em;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .group-header:hover td {
+            background: var(--bg);
+        }
+
+        .group-count {
+            font-weight: 400;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            margin-left: 0.3rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .error {
+            text-align: center;
+            padding: 3rem;
+            color: #ff6b6b;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        footer {
+            padding: 1.5rem 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        footer a {
+            color: var(--link);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a class="nav-brand" href="./index.html">libsignal Call Graph</a>
+            <ul class="nav-links">
+                <li><a href="./index.html">Graph Viewer</a></li>
+                <li><a href="./entry-nodes.html" class="active">Entry Nodes</a></li>
+                <li><a href="https://github.com/Beneficial-AI-Foundation/libsignal_focus_verus_dalek" target="_blank">GitHub</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container">
+            <h1>Entry Nodes</h1>
+            <p>Libsignal functions with no callers in the call graph — these are the entry points from libsignal into curve25519-dalek.</p>
+        </div>
+    </section>
+
+    <div class="container">
+        <div class="controls">
+            <input type="text" id="search" class="search-box" placeholder="Search by name or id...">
+            <span class="stat-badge">Total <span class="count" id="totalCount">...</span></span>
+        </div>
+
+        <details class="section" open>
+            <summary class="section-heading">API (Bridge) <span class="section-count" id="apiCount">...</span></summary>
+            <div class="table-container">
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th data-sort="display_name" class="sorted">
+                                    display_name <span class="sort-indicator">▲</span>
+                                </th>
+                                <th data-sort="id">
+                                    id <span class="sort-indicator">▲</span>
+                                </th>
+                                <th>source code</th>
+                                <th>graph</th>
+                            </tr>
+                        </thead>
+                        <tbody id="apiBody">
+                            <tr><td colspan="4" class="loading">Loading graph data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+
+        <details class="section" open>
+            <summary class="section-heading">Library <span class="section-count" id="libCount">...</span></summary>
+            <div class="table-container">
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th data-sort="display_name" class="sorted">
+                                    display_name <span class="sort-indicator">▲</span>
+                                </th>
+                                <th data-sort="id">
+                                    id <span class="sort-indicator">▲</span>
+                                </th>
+                                <th>source code</th>
+                                <th>graph</th>
+                            </tr>
+                        </thead>
+                        <tbody id="libBody">
+                            <tr><td colspan="4" class="loading">Loading graph data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+
+        <details class="section">
+            <summary class="section-heading">Tests <span class="section-count" id="testCount">...</span></summary>
+            <div class="table-container">
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th data-sort="display_name" class="sorted">
+                                    display_name <span class="sort-indicator">▲</span>
+                                </th>
+                                <th data-sort="id">
+                                    id <span class="sort-indicator">▲</span>
+                                </th>
+                                <th>source code</th>
+                                <th>graph</th>
+                            </tr>
+                        </thead>
+                        <tbody id="testBody">
+                            <tr><td colspan="4" class="loading">Loading graph data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+
+        <details class="section">
+            <summary class="section-heading">Benches <span class="section-count" id="benchCount">...</span></summary>
+            <div class="table-container">
+                <div class="table-scroll">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th data-sort="display_name" class="sorted">
+                                    display_name <span class="sort-indicator">▲</span>
+                                </th>
+                                <th data-sort="id">
+                                    id <span class="sort-indicator">▲</span>
+                                </th>
+                                <th>source code</th>
+                                <th>graph</th>
+                            </tr>
+                        </thead>
+                        <tbody id="benchBody">
+                            <tr><td colspan="4" class="loading">Loading graph data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </details>
+    </div>
+
+    <footer>
+        <div class="container">
+            Generated from <a id="footerLink" href="#">graph.json</a>
+            &middot; <span id="footerMeta"></span>
+        </div>
+    </footer>
+
+    <script src="entry-nodes.js"></script>
+</body>
+</html>

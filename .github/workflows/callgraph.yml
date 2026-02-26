@@ -12,8 +12,13 @@ concurrency:
   group: "pages"
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
-  callgraph:
+  generate:
     uses: Beneficial-AI-Foundation/scip-callgraph/.github/workflows/generate-callgraph.yml@main
     with:
       github_url: https://github.com/Beneficial-AI-Foundation/libsignal_focus_verus_dalek
@@ -23,7 +28,54 @@ jobs:
       skip_similar_lemmas: false
       verus_version: "0.2026.01.14.88f7396"
       rust_version: "1.92.0"
+      deploy_mode: subpath
+      subpath: libsignal_focus_verus_dalek
     permissions:
       contents: read
       pages: write
       id-token: write
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: generate
+    runs-on: ubuntu-latest
+
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout (entry-nodes page)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: pages
+          sparse-checkout-cone-mode: true
+
+      - name: Download callgraph viewer artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: callgraph-viewer
+          path: site
+
+      - name: Add entry-nodes page to site
+        run: |
+          cp pages/entry-nodes.html site/
+          cp pages/entry-nodes.js site/
+          echo "=== Site contents ==="
+          ls -la site/
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload combined artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
