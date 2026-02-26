@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>libsignal Workspace Dependency Graph</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #f5f5f5; font-family: system-ui, -apple-system, sans-serif; overflow: hidden; height: 100vh; }
+  #toolbar {
+    position: fixed; top: 12px; right: 12px; z-index: 10;
+    display: flex; gap: 6px; background: #fff; padding: 6px 10px;
+    border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.15);
+    align-items: center; font-size: 13px; color: #555;
+  }
+  #toolbar button {
+    width: 32px; height: 32px; border: 1px solid #ddd; border-radius: 6px;
+    background: #fff; cursor: pointer; font-size: 18px; line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #toolbar button:hover { background: #eee; }
+  #toolbar .sep { width: 1px; height: 20px; background: #ddd; }
+  #zoom-level { min-width: 42px; text-align: center; }
+  #hint {
+    position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,.6); color: #fff; padding: 6px 14px;
+    border-radius: 6px; font-size: 12px; pointer-events: none;
+    transition: opacity .5s; z-index: 10;
+  }
+  #container { width: 100vw; height: 100vh; cursor: grab; }
+  #container.dragging { cursor: grabbing; }
+  #container svg { display: block; transform-origin: 0 0; }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <button id="zoom-in" title="Zoom in">+</button>
+  <button id="zoom-out" title="Zoom out">&minus;</button>
+  <span id="zoom-level">100%</span>
+  <div class="sep"></div>
+  <button id="fit" title="Fit to window">&#x2922;</button>
+  <button id="reset" title="Reset (100%)">1:1</button>
+</div>
+
+<div id="hint">Scroll to zoom &middot; Drag to pan</div>
+
+<div id="container"></div>
+
+<script>
+(async () => {
+  const container = document.getElementById('container');
+  const zoomLabel = document.getElementById('zoom-level');
+  const hint = document.getElementById('hint');
+
+  const resp = await fetch('dependency-graph.svg');
+  container.innerHTML = await resp.text();
+  const svg = container.querySelector('svg');
+  svg.removeAttribute('width');
+  svg.removeAttribute('height');
+  svg.style.width = '100%';
+  svg.style.height = '100%';
+
+  const vb = svg.viewBox.baseVal;
+  const svgW = vb.width || svg.getBoundingClientRect().width;
+  const svgH = vb.height || svg.getBoundingClientRect().height;
+
+  let scale = 1, tx = 0, ty = 0;
+  let dragging = false, lastX = 0, lastY = 0;
+
+  function apply() {
+    svg.style.transform = `translate(${tx}px,${ty}px) scale(${scale})`;
+    zoomLabel.textContent = Math.round(scale * 100) + '%';
+  }
+
+  function fitToWindow() {
+    const cw = container.clientWidth, ch = container.clientHeight;
+    scale = Math.min(cw / svgW, ch / svgH) * 0.95;
+    tx = (cw - svgW * scale) / 2;
+    ty = (ch - svgH * scale) / 2;
+    apply();
+  }
+
+  function zoomAt(cx, cy, factor) {
+    const newScale = Math.min(Math.max(scale * factor, 0.1), 10);
+    tx = cx - (cx - tx) * (newScale / scale);
+    ty = cy - (cy - ty) * (newScale / scale);
+    scale = newScale;
+    apply();
+  }
+
+  container.addEventListener('wheel', e => {
+    e.preventDefault();
+    zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.15 : 1 / 1.15);
+  }, { passive: false });
+
+  container.addEventListener('mousedown', e => {
+    dragging = true; lastX = e.clientX; lastY = e.clientY;
+    container.classList.add('dragging');
+  });
+  window.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    tx += e.clientX - lastX; ty += e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    apply();
+  });
+  window.addEventListener('mouseup', () => {
+    dragging = false; container.classList.remove('dragging');
+  });
+
+  document.getElementById('zoom-in').onclick = () => {
+    const r = container.getBoundingClientRect();
+    zoomAt(r.width / 2, r.height / 2, 1.3);
+  };
+  document.getElementById('zoom-out').onclick = () => {
+    const r = container.getBoundingClientRect();
+    zoomAt(r.width / 2, r.height / 2, 1 / 1.3);
+  };
+  document.getElementById('fit').onclick = fitToWindow;
+  document.getElementById('reset').onclick = () => {
+    scale = 1; tx = 0; ty = 0; apply();
+  };
+
+  fitToWindow();
+  setTimeout(() => { hint.style.opacity = '0'; }, 3000);
+})();
+</script>
+</body>
+</html>

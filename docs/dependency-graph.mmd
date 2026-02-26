@@ -1,0 +1,100 @@
+flowchart TD
+
+  subgraph foundations ["Foundations"]
+    curve25519_dalek["curve25519-dalek"]
+    spqr["spqr"]
+    libsignal_core["libsignal-core"]
+    signal_crypto["signal-crypto"]
+    poksho["poksho"]
+  end
+
+  subgraph protocol_crypto ["Protocol and Crypto"]
+    libsignal_protocol["libsignal-protocol"]
+    libsignal_account_keys["libsignal-account-keys"]
+    zkcredential["zkcredential"]
+    zkgroup["zkgroup"]
+    usernames["usernames"]
+    libsignal_keytrans["libsignal-keytrans"]
+  end
+
+  subgraph application ["Application"]
+    attest["attest"]
+    device_transfer["device-transfer"]
+    signal_media["signal-media"]
+    libsignal_message_backup["libsignal-message-backup"]
+  end
+
+  subgraph networking ["Networking"]
+    libsignal_net_infra["libsignal-net-infra"]
+    libsignal_net["libsignal-net"]
+    libsignal_net_chat["libsignal-net-chat"]
+  end
+
+  subgraph bridges ["Platform Bridges"]
+    libsignal_ffi["libsignal-ffi"]
+    libsignal_jni["libsignal-jni"]
+    libsignal_jni_impl["libsignal-jni-impl"]
+    libsignal_jni_testing["libsignal-jni-testing"]
+    libsignal_node["libsignal-node"]
+  end
+
+  %% Foundations internal
+  libsignal_core --> curve25519_dalek
+  signal_crypto --> libsignal_core
+  poksho --> curve25519_dalek
+  spqr --> curve25519_dalek
+
+  %% Protocol and Crypto
+  libsignal_protocol --> libsignal_core
+  libsignal_protocol --> signal_crypto
+  libsignal_protocol --> spqr
+  libsignal_account_keys --> libsignal_core
+  libsignal_account_keys --> signal_crypto
+  zkcredential --> curve25519_dalek
+  zkcredential --> poksho
+  zkgroup --> libsignal_account_keys
+  zkgroup --> libsignal_core
+  zkgroup --> poksho
+  zkgroup --> zkcredential
+  usernames --> curve25519_dalek
+  usernames --> poksho
+  usernames --> signal_crypto
+  libsignal_keytrans --> curve25519_dalek
+
+  %% Application
+  libsignal_message_backup --> libsignal_account_keys
+  libsignal_message_backup --> libsignal_core
+  libsignal_message_backup --> libsignal_protocol
+  libsignal_message_backup --> signal_crypto
+  libsignal_message_backup --> usernames
+  libsignal_message_backup --> zkcredential
+  libsignal_message_backup --> zkgroup
+
+  %% Networking
+  libsignal_net_infra --> attest
+  libsignal_net_infra --> libsignal_core
+  libsignal_net --> attest
+  libsignal_net --> libsignal_account_keys
+  libsignal_net --> libsignal_core
+  libsignal_net --> libsignal_keytrans
+  libsignal_net --> libsignal_net_infra
+  libsignal_net --> libsignal_protocol
+  libsignal_net --> signal_crypto
+  libsignal_net_chat --> libsignal_core
+  libsignal_net_chat --> libsignal_keytrans
+  libsignal_net_chat --> libsignal_net
+  libsignal_net_chat --> libsignal_protocol
+  libsignal_net_chat --> zkgroup
+
+  %% Bridges
+  libsignal_ffi --> libsignal_core
+  libsignal_ffi --> libsignal_net
+  libsignal_ffi --> libsignal_net_chat
+  libsignal_ffi --> libsignal_protocol
+  libsignal_ffi --> signal_media
+  libsignal_jni --> libsignal_jni_impl
+  libsignal_jni_impl --> libsignal_core
+  libsignal_jni_impl --> libsignal_protocol
+  libsignal_jni_impl --> signal_crypto
+  libsignal_jni_testing --> libsignal_jni_impl
+  libsignal_node --> libsignal_protocol
